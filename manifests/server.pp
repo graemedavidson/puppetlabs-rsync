@@ -9,6 +9,7 @@
 class rsync::server(
   $use_xinetd = true,
   $address    = '0.0.0.0',
+  $disable    = 'no',
   $motd_file  = 'UNSET',
   $use_chroot = 'yes',
   $uid        = 'nobody',
@@ -16,21 +17,32 @@ class rsync::server(
 ) inherits rsync {
 
   $conf_file = $::osfamily ? {
+    'RedHat' => '/etc/rsyncd.conf',
+    'CentOS' => '/etc/rsyncd.conf',
     'Debian' => '/etc/rsyncd.conf',
+    'suse'   => '/etc/rsyncd.conf',
     default  => '/etc/rsync.conf',
+  }
+
+  $servicename = $::osfamily ? {
+    'suse'  => 'rsyncd',
+    default => 'rsync',
   }
 
   if $use_xinetd {
     include xinetd
     xinetd::service { 'rsync':
       bind        => $address,
+      disable     => $disable,
       port        => '873',
+      user        => $uid,
+      group       => $gid,
       server      => '/usr/bin/rsync',
       server_args => "--daemon --config ${conf_file}",
       require     => Package['rsync'],
     }
   } else {
-    service { 'rsync':
+    service { $servicename:
       ensure     => running,
       enable     => true,
       hasstatus  => true,
