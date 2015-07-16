@@ -40,6 +40,7 @@ class rsync::server(
       server      => '/usr/bin/rsync',
       server_args => "--daemon --config ${conf_file}",
       require     => Package['rsync'],
+      notify      => Service['xinetd'],
     }
   } else {
     service { $servicename:
